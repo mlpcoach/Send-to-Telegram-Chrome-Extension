@@ -38,10 +38,26 @@ async function sendText(bot, text, source) {
   return resp.json();
 }
 
-async function sendImage(bot, imageUrl, caption) {
+async function sendImage(bot, imageSource, caption) {
+  // If it's a blob/file, use multipart upload
+  if (imageSource instanceof Blob) {
+    const form = new FormData();
+    form.append('chat_id', bot.chatId);
+    form.append('photo', imageSource, 'image.png');
+    if (caption) form.append('caption', caption.substring(0, 1024));
+
+    const resp = await fetch(`https://api.telegram.org/bot${bot.token}/sendPhoto`, {
+      method: 'POST',
+      body: form,
+    });
+    if (!resp.ok) throw new Error(`Telegram API error: ${resp.status}`);
+    return resp.json();
+  }
+
+  // URL-based image
   const body = {
     chat_id: bot.chatId,
-    photo: imageUrl,
+    photo: imageSource,
     caption: caption ? caption.substring(0, 1024) : '',
   };
 
@@ -55,10 +71,26 @@ async function sendImage(bot, imageUrl, caption) {
   return resp.json();
 }
 
-async function sendDocument(bot, fileUrl, caption) {
+async function sendDocument(bot, fileSource, caption, filename) {
+  // If it's a blob/file, use multipart upload
+  if (fileSource instanceof Blob) {
+    const form = new FormData();
+    form.append('chat_id', bot.chatId);
+    form.append('document', fileSource, filename || 'file');
+    if (caption) form.append('caption', caption.substring(0, 1024));
+
+    const resp = await fetch(`https://api.telegram.org/bot${bot.token}/sendDocument`, {
+      method: 'POST',
+      body: form,
+    });
+    if (!resp.ok) throw new Error(`Telegram API error: ${resp.status}`);
+    return resp.json();
+  }
+
+  // URL-based document
   const body = {
     chat_id: bot.chatId,
-    document: fileUrl,
+    document: fileSource,
     caption: caption ? caption.substring(0, 1024) : '',
   };
 
@@ -70,6 +102,14 @@ async function sendDocument(bot, fileUrl, caption) {
 
   if (!resp.ok) throw new Error(`Telegram API error: ${resp.status}`);
   return resp.json();
+}
+
+async function captureAndSend(bot, tab, caption) {
+  // Capture visible tab as screenshot
+  const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+  const resp = await fetch(dataUrl);
+  const blob = await resp.blob();
+  return sendImage(bot, blob, caption || tab.title || 'Screenshot');
 }
 
 // ── Send dispatcher ─────────────────────────────────────────
@@ -103,6 +143,13 @@ async function pushContent(type, tab, content, botIndex) {
       case 'file':
         await sendDocument(bot, content, source ? source.title : '');
         break;
+      case 'screenshot':
+        await captureAndSend(bot, tab, 'Screenshot: ' + (tab ? tab.title : ''));
+        break;
+      case 'upload':
+        // content is {blob, filename}
+        await sendDocument(bot, content.blob, source ? source.title : '', content.filename);
+        break;
       default:
         await sendText(bot, content || tab.url, source);
     }
@@ -128,6 +175,32 @@ async function setupContextMenus() {
     image: 'Send image',
     selection: 'Send selection',
   };
+
+  // Screenshot menu item (always available on page context)
+  if (bots.length === 1) {
+    chrome.contextMenus.create({
+      id: 'screenshot:0',
+      title: `Screenshot to ${bots[0].name}`,
+      contexts: ['page'],
+    });
+  } else {
+    const ssParent = 'parent:screenshot';
+    chrome.contextMenus.create({
+      id: ssParent,
+      title: 'Screenshot page',
+      contexts: ['page'],
+    });
+    for (let i = 0; i < bots.length; i++) {
+      chrome.contextMenus.create({
+        id: `screenshot:${i}`,
+        parentId: ssParent,
+        title: bots[i].name,
+        contexts: ['page'],
+      });
+    }
+  }
+
+  chrome.contextMenus.create({ id: 'sep', type: 'separator', contexts: ['page'] });
 
   if (bots.length === 1) {
     // Single bot — flat menu
@@ -164,6 +237,13 @@ async function setupContextMenus() {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const parts = info.menuItemId.split(':');
+
+  if (parts[0] === 'screenshot') {
+    const botIndex = parseInt(parts[1], 10);
+    pushContent('screenshot', tab, '', botIndex);
+    return;
+  }
+
   if (parts[0] !== 'send') return;
 
   const type = parts[1];
@@ -196,10 +276,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.tabs.sendMessage(tab.id, { method: 'selection' }, (text) => {
           pushContent('selection', tab, text || tab.url, request.botIndex);
         });
+      } else if (request.type === 'screenshot') {
+        pushContent('screenshot', tab, '', request.botIndex);
       } else {
         pushContent(request.type || 'page', tab, request.content || '', request.botIndex);
       }
     });
+  } else if (request.action === 'upload-file') {
+    // File upload from popup — request contains base64 data
+    (async () => {
+      const bots = await getBots();
+      const bot = bots[request.botIndex];
+      if (!bot) return;
+      try {
+        const resp = await fetch(request.dataUrl);
+        const blob = await resp.blob();
+        await sendDocument(bot, blob, request.caption || '', request.filename);
+        showBadge('#006400', '✓', 2);
+      } catch (err) {
+        console.error('Upload error:', err);
+        showBadge('#ff0000', '✗', 3);
+      }
+    })();
   }
 });
 
