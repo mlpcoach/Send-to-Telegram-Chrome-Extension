@@ -1,63 +1,118 @@
 <!doctype html>
 <html>
 <head>
-    <title>Send to Telegram</title>
-    <style type="text/css">
-        body {
-            background-color: white;
-            padding: 8px;
-            font-family: Helvetica, Arial, Serif;
-        }
-        /* input, button, select, option {
-            border-radius: 5px;
-            background-color: rgb(235, 235, 235);
-            padding: 5px;
-            font-weight: bold;
-            border: 1px solid rgb(12, 40, 99);
-        } */
-        .input {
-            width: 400px;
-        }
-        select {
-            width: 310px;
-        }
-        td {
-            padding: 5px;
-        }
-        td:first-child {
-            text-align: right;
-            font-weight: bold;
-        }
-        #message {
-            font-size: 15px;
-            color: green;
-            /* font-weight: bold; */
-        }
-    </style>
+  <title>Sanctum Send — Settings</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 { color: #7c83ff; font-size: 22px; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+    .bot-card {
+      background: #16213e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .bot-card .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .bot-card .header .name { font-weight: 600; font-size: 15px; }
+    .bot-card .remove-btn {
+      background: none;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #f87171;
+      cursor: pointer;
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+    .bot-card .remove-btn:hover { border-color: #f87171; }
+    .field {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .field label {
+      width: 80px;
+      text-align: right;
+      font-size: 12px;
+      color: #888;
+      flex-shrink: 0;
+    }
+    .field input {
+      flex: 1;
+      background: #0f0f23;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 6px 8px;
+      color: #e0e0e0;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .field input:focus { border-color: #7c83ff; outline: none; }
+    .field input.invalid { border-color: #f87171; }
+    .field input.valid { border-color: #4ade80; }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    button {
+      background: #7c83ff;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    button:hover { background: #6b72e8; }
+    button.secondary {
+      background: #16213e;
+      border: 1px solid #333;
+      color: #aaa;
+    }
+    button.secondary:hover { border-color: #7c83ff; color: #7c83ff; }
+    #status {
+      margin-top: 12px;
+      font-size: 13px;
+      min-height: 20px;
+    }
+    #status.ok { color: #4ade80; }
+    #status.err { color: #f87171; }
+    .empty {
+      text-align: center;
+      color: #555;
+      padding: 30px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Send to Telegram</h1>
-    <table border="0">
-        <tr>
-            <td>API Token:
-            <td><input id='token' class="input">
-        <tr>
-            <td>User ID:
-            <td><input id='userkey' class="input">
-        <tr>
-            <td><button id='save'>Save</button>
-                <td id='message'>&nbsp;
-    </table>
-    <h4>Setup Instruction:</h4>
-    <ol>
-        <li>Install "Send to Telegram" from <a href="https://chrome.google.com/webstore/detail/send-to-telegram-for-goog/dgblfklicldlbclahclbkeiacpiiancc">Chrome Web Store - Send to Telegram</a>.</li>
-        <li>Create a Telegram Bot following <a href="https://core.telegram.org/bots#6-botfather">Telegram official introduction</a> and get your bot <code>&lt;API token&gt;</code>.</li>
-        <li><strong>Send any message to the bot created, in the Telegram APP.</strong></li>
-        <li>Get your <code>&lt;User ID&gt;</code> (value of "<code>id</code>" in the response) by visiting <code>https://api.telegram.org/bot&lt;API token&gt;/getUpdates</code>.</li>
-        <li>Fill your <code>&lt;API token&gt;</code> and <code>&lt;User ID&gt;</code> in the extension setting page.</li>
-        <li>If everything is working correctly, this page and your bot will display '"Send to Telegram" configured successfully!'.</li>
-    </ol>      
-    <script type="text/javascript" src="options.js"></script>
+  <h1>Sanctum Send</h1>
+  <div class="subtitle">Multi-bot Telegram sender for the NeuroSanctum fleet</div>
 
+  <div id="bot-list"></div>
+
+  <div class="btn-row">
+    <button id="add-bot">+ Add Bot</button>
+    <button id="save" class="secondary">Save All</button>
+  </div>
+  <div id="status"></div>
+
+  <script src="options.js"></script>
 </body>
 </html>

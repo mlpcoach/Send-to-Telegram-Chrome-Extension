@@ -1,26 +1,29 @@
 {
-  "name": "Send to Telegram for Google Chrome",
-  "version": "1.1.1",
-  "description": "Send to Telegram for Google Chrome, with your own key and token.",
+  "name": "Sanctum Send — Multi-Bot Telegram Sender",
+  "version": "2.0.0",
+  "description": "Send web content to any of your Telegram bots. Multi-bot, file attachments, right-click menus.",
   "action": {
     "default_icon": "tg.png",
-    "default_title": "Push this page!"
+    "default_title": "Sanctum Send",
+    "default_popup": "popup.html"
   },
   "background": {
     "service_worker": "background.js"
   },
   "icons": {
-      "128": "tg.png"
+    "128": "tg.png"
   },
   "options_page": "options.html",
   "permissions": [
     "tabs",
     "contextMenus",
-    "storage"
+    "storage",
+    "activeTab"
   ],
   "host_permissions": [
     "http://*/*",
-    "https://*/*"
+    "https://*/*",
+    "https://api.telegram.org/*"
   ],
   "content_scripts": [{
     "matches": ["http://*/*", "https://*/*"],
